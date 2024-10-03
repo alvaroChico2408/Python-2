@@ -28,8 +28,8 @@ def ventana_principal():
     
     # BUSCAR
     menubuscar = Menu(menu, tearoff=0)
-    menubuscar.add_command(label="Título", command=raiz.quit)
-    menubuscar.add_command(label="Editorial", command=raiz.quit)
+    menubuscar.add_command(label="Título", command=buscar_titulo)
+    menubuscar.add_command(label="Editorial", command=buscar_editorial)
     menu.add_cascade(label="Buscar", menu=menubuscar)
 
     raiz.config(menu=menu)
@@ -51,8 +51,8 @@ def almacenar_bd(libros):
 
     conn = sqlite3.connect('libros.db')
     conn.text_factory = str
-    conn.execute("DROP TABLE IF EXISTS LIBRO")
-    conn.execute('''CREATE TABLE LIBRO
+    conn.execute("DROP TABLE IF EXISTS LIBROS")
+    conn.execute('''CREATE TABLE LIBROS
        (ISBN            TEXT NOT NULL,
         TITULO    TEXT,
         AUTOR      TEXT,
@@ -68,11 +68,11 @@ def almacenar_bd(libros):
         if(libro[3] == 'Unknown'):
             año = 0
         
-        conn.execute("""INSERT INTO LIBRO (ISBN, TITULO, AUTOR, EDITORIAL, AÑO) VALUES (?,?,?,?,?)""",
+        conn.execute("""INSERT INTO LIBROS (ISBN, TITULO, AUTOR, EDITORIAL, AÑO) VALUES (?,?,?,?,?)""",
                      (isbn, titulo, autor, editorial, año))
     conn.commit()
 
-    cursor = conn.execute("SELECT COUNT(*) FROM LIBRO")
+    cursor = conn.execute("SELECT COUNT(*) FROM LIBROS")
     messagebox.showinfo("Base Datos",
                         "Base de datos creada correctamente \nHay " + str(cursor.fetchone()[0]) + " libros")
     conn.close()
@@ -89,7 +89,7 @@ def cargar():
 def listar_libros_completo():
             conn = sqlite3.connect('libros.db')
             conn.text_factory = str
-            cursor = conn.execute("SELECT ISBN, TITULO, AUTOR, AÑO FROM LIBRO")
+            cursor = conn.execute("SELECT ISBN, TITULO, AUTOR, AÑO FROM LIBROS")
             conn.close
             formato_libros(cursor)
             
@@ -116,9 +116,9 @@ def listar_libros_ordenado():
             conn = sqlite3.connect('libros.db')
             conn.text_factory = str
             if control.get() == 1:
-                cursor = conn.execute("SELECT ISBN, TITULO, AUTOR, AÑO FROM LIBRO ORDER BY ISBN")
+                cursor = conn.execute("SELECT ISBN, TITULO, AUTOR, AÑO FROM LIBROS ORDER BY ISBN")
             else:
-                cursor = conn.execute("SELECT ISBN, TITULO, AUTOR, AÑO FROM LIBRO ORDER BY AÑO")
+                cursor = conn.execute("SELECT ISBN, TITULO, AUTOR, AÑO FROM LIBROS ORDER BY AÑO")
             conn.close
             formato_libros(cursor)
 
@@ -130,6 +130,51 @@ def listar_libros_ordenado():
     rb1.pack()
     rb2.pack()
     b.pack()
+
+
+def buscar_editorial():
+
+    def lista(event):
+            conn = sqlite3.connect('libros.db')
+            conn.text_factory = str
+            cursor = conn.execute("SELECT TITULO, AUTOR, EDITORIAL, AÑO FROM LIBROS WHERE EDITORIAL = '" + sb.get() + "'")
+            conn.close
+            formato_libros(cursor)
+    
+    conn = sqlite3.connect('libros.db')
+    conn.text_factory = str
+    cursor = conn.execute("SELECT DISTINCT EDITORIAL FROM LIBROS")
+    
+    editoriales = [i[0] for i in cursor]
+        
+    v = Toplevel()
+    sb = Spinbox(v, values=editoriales)
+    sb.bind("<Return>", lista)
+    sb.pack()
+    
+    conn.close()
+    
+
+def buscar_titulo():
+
+    def lista(event):
+            conn = sqlite3.connect('libros.db')
+            conn.text_factory = str
+            cursor = conn.execute("SELECT ISBN, TITULO, AUTOR, AÑO FROM LIBROS WHERE TITULO LIKE  '%" + en.get() + "%'")
+            conn.close
+            formato_libros(cursor)
+    
+    conn = sqlite3.connect('libros.db')
+    conn.text_factory = str
+        
+    v = Toplevel()
+    lb = Label(v, text="Introduzca la palabra a buscar")
+    en = Entry(v)
+    en.bind("<Return>", lista)
+    lb.pack(side=LEFT)
+    en.pack(side=LEFT)
+    
+    conn.close()
 
 
 if __name__ == '__main__':
